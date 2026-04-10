@@ -262,7 +262,24 @@
     </div>
 </div>
 
-<script>
+<script type="module">
+// --- FIREBASE SYSTEM ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, push, query, orderByChild, limitToLast, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDNCoOPkWZz5GV0ZAQaGbEa9ib0B8rBiF8",
+  authDomain: "spaceflapper.firebaseapp.com",
+  projectId: "spaceflapper",
+  storageBucket: "spaceflapper.firebasestorage.app",
+  messagingSenderId: "679465598231",
+  appId: "1:679465598231:web:fd6f3b439c99d3f901cb52",
+  measurementId: "G-NSHWQ8T42J"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 // --- AUDIO SYSTEM ---
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
@@ -352,39 +369,30 @@ let timeSinceStart = 0;
 let gracePeriod = 0;
 
 let leaderboard = [];
-try {
-    const raw = localStorage.getItem('spaceFlapperLeaderboard');
-    if (raw) leaderboard = JSON.parse(raw);
-    if (!Array.isArray(leaderboard) || leaderboard.length === 0) {
-        leaderboard = [{initials: 'ISU', score: 400000}];
-    }
-} catch (e) {
-    leaderboard = [{initials: 'ISU', score: 400000}];
-    console.warn("Storage Error:", e);
-}
-
-// Clean up old mock data from local storage if it was already saved
-leaderboard = leaderboard.filter(entry => 
-    !(entry.initials === 'NEB' && entry.score === 200000) && 
-    !(entry.initials === 'FLA' && entry.score === 50000)
-);
-
-try {
-    localStorage.setItem('spaceFlapperLeaderboard', JSON.stringify(leaderboard));
-} catch (e) {
-    console.warn("Storage Error:", e);
-}
 
 function updateLeaderboardUI() {
     const list = document.getElementById('leaderboard-list');
     list.innerHTML = '';
-    leaderboard.forEach(entry => {
+    // Display only top 10 from the global list
+    leaderboard.slice(0, 10).forEach(entry => {
         const li = document.createElement('li');
         li.innerHTML = `<span>${entry.initials}</span> <span>${entry.score.toLocaleString()} km</span>`;
         list.appendChild(li);
     });
 }
-updateLeaderboardUI();
+
+// Fetch leaderboard from Firebase Realtime Database
+const scoresRef = ref(db, 'scores');
+const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+
+onValue(topScoresQuery, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        // Firebase returns an object, convert to array and sort descending
+        leaderboard = Object.values(data).sort((a, b) => b.score - a.score);
+        updateLeaderboardUI();
+    }
+});
 
 // Rocket
 const rocket = {
@@ -517,16 +525,12 @@ document.getElementById('save-score-btn').addEventListener('click', (e) => {
     let initials = input.value.trim().toUpperCase();
     if (!initials) initials = '???';
     
-    leaderboard.push({initials: initials, score: score});
-    leaderboard.sort((a, b) => b.score - a.score);
-    if (leaderboard.length > 10) leaderboard = leaderboard.slice(0, 10);
-    
-    try {
-        localStorage.setItem('spaceFlapperLeaderboard', JSON.stringify(leaderboard));
-    } catch (e) {
-        console.warn("Storage Error:", e);
-    }
-    updateLeaderboardUI();
+    // Push new score to Firebase
+    push(scoresRef, {
+        initials: initials,
+        score: score,
+        timestamp: Date.now()
+    }).catch(e => console.error("Firebase Push Error:", e));
     
     document.getElementById('initials-container').classList.add('hidden');
     document.getElementById('restart-btn').classList.remove('hidden');
