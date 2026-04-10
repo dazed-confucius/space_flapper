@@ -279,7 +279,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const db = getDatabase(app, "https://spaceflapper-default-rtdb.firebaseio.com/");
+
+console.log("Firebase Initialized with URL: https://spaceflapper-default-rtdb.firebaseio.com/");
 
 // --- AUDIO SYSTEM ---
 const AudioContext = window.AudioContext || window.webkitAudioContext;
