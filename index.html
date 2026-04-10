@@ -152,6 +152,13 @@
         gap: 30px;
         max-width: 95vw;
     }
+    
+    @media (max-width: 850px) {
+        .main-wrapper {
+            flex-direction: column;
+            align-items: center;
+        }
+    }
 
     .leaderboard-side-panel {
         background-color: rgba(0, 0, 20, 0.85);
@@ -343,16 +350,29 @@ let obstacleSpawnCounter = 0;
 let obstaclesPassed = 0;
 let timeSinceStart = 0;
 
-let leaderboard = JSON.parse(localStorage.getItem('spaceFlapperLeaderboard')) || [
-    {initials: 'ISU', score: 400000}
-];
+let leaderboard = [];
+try {
+    const raw = localStorage.getItem('spaceFlapperLeaderboard');
+    if (raw) leaderboard = JSON.parse(raw);
+    if (!Array.isArray(leaderboard) || leaderboard.length === 0) {
+        leaderboard = [{initials: 'ISU', score: 400000}];
+    }
+} catch (e) {
+    leaderboard = [{initials: 'ISU', score: 400000}];
+    console.warn("Storage Error:", e);
+}
 
 // Clean up old mock data from local storage if it was already saved
 leaderboard = leaderboard.filter(entry => 
     !(entry.initials === 'NEB' && entry.score === 200000) && 
     !(entry.initials === 'FLA' && entry.score === 50000)
 );
-localStorage.setItem('spaceFlapperLeaderboard', JSON.stringify(leaderboard));
+
+try {
+    localStorage.setItem('spaceFlapperLeaderboard', JSON.stringify(leaderboard));
+} catch (e) {
+    console.warn("Storage Error:", e);
+}
 
 function updateLeaderboardUI() {
     const list = document.getElementById('leaderboard-list');
@@ -469,7 +489,7 @@ function gameOver() {
     const initialsContainer = document.getElementById('initials-container');
     const restartBtn = document.getElementById('restart-btn');
     
-    if (isTop10 && score > 0) {
+    if (isTop10 && score >= 0) {
         initialsContainer.classList.remove('hidden');
         restartBtn.classList.add('hidden');
         document.getElementById('initials-input').value = '';
@@ -493,7 +513,11 @@ document.getElementById('save-score-btn').addEventListener('click', (e) => {
     leaderboard.sort((a, b) => b.score - a.score);
     if (leaderboard.length > 10) leaderboard = leaderboard.slice(0, 10);
     
-    localStorage.setItem('spaceFlapperLeaderboard', JSON.stringify(leaderboard));
+    try {
+        localStorage.setItem('spaceFlapperLeaderboard', JSON.stringify(leaderboard));
+    } catch (e) {
+        console.warn("Storage Error:", e);
+    }
     updateLeaderboardUI();
     
     document.getElementById('initials-container').classList.add('hidden');
