@@ -290,11 +290,24 @@ console.log("Firebase Initializing...");
 
 // Connection Timeout
 setTimeout(() => {
-    if (statusEl && statusEl.textContent === "Status: Connecting...") {
-        statusEl.textContent = "Status: Timeout (Check URL/Rules)";
+    if (statusEl && (statusEl.textContent === "Status: Connecting..." || statusEl.textContent === "Status: Initializing...")) {
+        statusEl.textContent = "Status: Timeout (Server unreachable)";
         statusEl.style.color = "#ffaa00";
     }
-}, 5000);
+}, 7000);
+
+// Monitor connection state
+db.ref(".info/connected").on("value", (snap) => {
+    if (snap.val() === true) {
+        if (statusEl) {
+            statusEl.textContent = "Status: Online (Syncing...)";
+            statusEl.style.color = "#00ff00";
+        }
+        console.log("Firebase Connection: Handshake Successful");
+    } else {
+        console.log("Firebase Connection: Searching...");
+    }
+});
 
 // --- AUDIO SYSTEM ---
 const AudioContext = window.AudioContext || window.webkitAudioContext;
