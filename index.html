@@ -263,11 +263,11 @@
     </div>
 </div>
 
-<script type="module">
-// --- FIREBASE SYSTEM ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, query, orderByChild, limitToLast, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
+<script>
+// --- FIREBASE SYSTEM ---
 const firebaseConfig = {
   apiKey: "AIzaSyDNCoOPkWZz5GV0ZAQaGbEa9ib0B8rBiF8",
   authDomain: "spaceflapper.firebaseapp.com",
@@ -279,8 +279,11 @@ const firebaseConfig = {
   measurementId: "G-NSHWQ8T42J"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app, "https://spaceflapper-default-rtdb.firebaseio.com/");
+// Initialize Firebase using Compat SDK
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const scoresRef = db.ref('scores');
+const topScoresQuery = scoresRef.orderByChild('score').limitToLast(10);
 const statusEl = document.getElementById('connection-status');
 
 if (statusEl) statusEl.textContent = "Status: Connecting...";
@@ -391,11 +394,8 @@ function updateLeaderboardUI() {
     });
 }
 
-// Fetch leaderboard from Firebase Realtime Database
-const scoresRef = ref(db, 'scores');
-const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
-
-onValue(topScoresQuery, (snapshot) => {
+// Fetch leaderboard from Firebase
+topScoresQuery.on('value', (snapshot) => {
     console.log("Firebase Data Received", snapshot.val());
     if (statusEl) statusEl.textContent = "Status: Online";
     const data = snapshot.val();
@@ -544,7 +544,7 @@ document.getElementById('save-score-btn').addEventListener('click', (e) => {
     if (!initials) initials = '???';
     
     // Push new score to Firebase
-    push(scoresRef, {
+    scoresRef.push({
         initials: initials,
         score: score,
         timestamp: Date.now()
