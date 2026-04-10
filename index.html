@@ -271,6 +271,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDNCoOPkWZz5GV0ZAQaGbEa9ib0B8rBiF8",
   authDomain: "spaceflapper.firebaseapp.com",
   projectId: "spaceflapper",
+  databaseURL: "https://spaceflapper-default-rtdb.firebaseio.com",
   storageBucket: "spaceflapper.firebasestorage.app",
   messagingSenderId: "679465598231",
   appId: "1:679465598231:web:fd6f3b439c99d3f901cb52",
@@ -373,6 +374,10 @@ let leaderboard = [];
 function updateLeaderboardUI() {
     const list = document.getElementById('leaderboard-list');
     list.innerHTML = '';
+    if (leaderboard.length === 0) {
+        list.innerHTML = '<li style="justify-content: center; opacity: 0.5;">No scores yet</li>';
+        return;
+    }
     // Display only top 10 from the global list
     leaderboard.slice(0, 10).forEach(entry => {
         const li = document.createElement('li');
@@ -388,10 +393,15 @@ const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
 onValue(topScoresQuery, (snapshot) => {
     const data = snapshot.val();
     if (data) {
-        // Firebase returns an object, convert to array and sort descending
         leaderboard = Object.values(data).sort((a, b) => b.score - a.score);
-        updateLeaderboardUI();
+    } else {
+        leaderboard = [];
     }
+    updateLeaderboardUI();
+}, (error) => {
+    console.error("Firebase Sync Error:", error);
+    const list = document.getElementById('leaderboard-list');
+    list.innerHTML = `<li style="justify-content: center; color: #ff5555; font-size: 12px;">Sync Error: Check Rules</li>`;
 });
 
 // Rocket
