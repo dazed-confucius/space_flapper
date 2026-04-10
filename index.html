@@ -415,7 +415,7 @@ function updateLeaderboardUI() {
 }
 
 // Fetch leaderboard from Firebase
-scoresRef.limitToLast(10).on('value', (snapshot) => {
+scoresRef.orderByChild('score').limitToLast(10).on('value', (snapshot) => {
     console.log("Firebase Data Received", snapshot.val());
     if (statusEl) {
         statusEl.textContent = "Status: Online";
@@ -423,20 +423,22 @@ scoresRef.limitToLast(10).on('value', (snapshot) => {
     }
     const data = snapshot.val();
     if (data) {
-        // Sort manually to ensure it works even without server-side indices
+        // Firebase limitToLast returning ascending, we want descending
         leaderboard = Object.values(data).sort((a, b) => b.score - a.score);
     } else {
         leaderboard = [];
     }
     updateLeaderboardUI();
 }, (error) => {
-    console.error("Firebase Sync Error:", error);
-    if (statusEl) {
-        statusEl.textContent = "Status: Sync Error";
-        statusEl.style.color = "#ff5555";
-    }
-    const list = document.getElementById('leaderboard-list');
-    list.innerHTML = `<li style="justify-content: center; color: #ff5555; font-size: 12px;">Sync Error: check rules</li>`;
+    console.warn("Firebase Sync Error (possibly missing index):", error);
+    // Fallback: Try to fetch without sorting if index is missing
+    scoresRef.limitToLast(20).on('value', (snap) => {
+        const d = snap.val();
+        if (d) {
+            leaderboard = Object.values(d).sort((a, b) => b.score - a.score).slice(0, 10);
+            updateLeaderboardUI();
+        }
+    });
 });
 
 // Rocket
@@ -538,7 +540,7 @@ function gameOver() {
     state = 'gameover';
     playSound('gameover');
     
-    // Check if score is in top 10
+    // Check if score is in global top 10
     const isTop10 = leaderboard.length < 10 || score > (leaderboard[leaderboard.length - 1]?.score || 0);
 
     if (score > highScore) {
