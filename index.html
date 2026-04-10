@@ -71,8 +71,8 @@
         position: relative;
         width: 480px;
         max-width: 100vw;
-        height: 640px;
-        max-height: 80vh;
+        height: 800px;
+        max-height: 95vh;
         box-shadow: 0 0 30px rgba(100, 100, 255, 0.4);
     }
 
@@ -145,6 +145,75 @@
         text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     }
 
+    .main-wrapper {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 30px;
+        max-width: 95vw;
+    }
+
+    .leaderboard-side-panel {
+        background-color: rgba(0, 0, 20, 0.85);
+        border: 2px solid rgba(100, 140, 255, 0.6);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 10px rgba(100, 140, 255, 0.3);
+        width: 320px;
+        max-height: 800px;
+        overflow-y: auto;
+    }
+    .leaderboard-title {
+        font-family: 'Space Grotesk', 'Courier New', Courier, monospace;
+        text-shadow: 0 0 10px rgba(100, 140, 255, 1);
+        text-align: center;
+        color: #fff;
+        margin: 0 0 15px 0;
+        font-size: 28px;
+        letter-spacing: 1px;
+    }
+    .leaderboard-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 18px;
+    }
+    .leaderboard-list li {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        color: #d0d0ff;
+        border-bottom: 1px solid rgba(100, 140, 255, 0.2);
+        padding-bottom: 5px;
+    }
+
+    #initials-container {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+    #initials-input {
+        background: rgba(0,0,0,0.5);
+        border: 2px solid #6464ff;
+        color: white;
+        font-size: 24px;
+        font-family: 'Space Grotesk', 'Courier New', Courier, monospace;
+        width: 80px;
+        text-align: center;
+        padding: 5px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        outline: none;
+        pointer-events: auto;
+        user-select: auto;
+    }
+    #initials-input:focus {
+        border-color: #a0a0ff;
+        box-shadow: 0 0 10px #6464ff;
+    }
+
 </style>
 </head>
 <body>
@@ -153,24 +222,36 @@
 
 <img src="./Isu-logo.svg.png" alt="International Space University" class="isu-logo">
 
-
-
 <div class="title-box">
     <h1 class="title">SPACE FLAPPER</h1>
     <p class="subtitle">Press SPACE or tap to thrust</p>
 </div>
 
-<div class="game-container">
-    <canvas id="gameCanvas" width="480" height="640"></canvas>
-    
-    <div id="start-screen" class="overlay">
-        <button id="start-btn" class="btn">🚀 LAUNCH</button>
-    </div>
+<div class="main-wrapper">
+    <div class="game-container">
+        <canvas id="gameCanvas" width="480" height="800"></canvas>
+        
+        <div id="start-screen" class="overlay">
+            <button id="start-btn" class="btn">🚀 LAUNCH</button>
+        </div>
 
-    <div id="gameover-screen" class="overlay hidden">
-        <div class="gameover-text">MISSION FAILED</div>
-        <div id="final-score-display" class="final-score">Score: 0 km</div>
-        <button id="restart-btn" class="btn">PLAY AGAIN</button>
+        <div id="gameover-screen" class="overlay hidden">
+            <div class="gameover-text">MISSION FAILED</div>
+            <div id="final-score-display" class="final-score">Score: 0 km</div>
+            <div id="initials-container" class="hidden">
+                <div style="font-size: 18px; color: #ffffaa; text-shadow: 0 0 5px orange;">NEW HIGH SCORE!</div>
+                <input type="text" id="initials-input" maxlength="3" placeholder="AAA">
+                <button id="save-score-btn" class="btn" style="font-size: 16px; padding: 10px 20px;">SAVE</button>
+            </div>
+            <button id="restart-btn" class="btn">PLAY AGAIN</button>
+        </div>
+    </div>
+    
+    <div class="leaderboard-side-panel">
+        <h2 class="leaderboard-title">TOP 10 PILOTS</h2>
+        <ul id="leaderboard-list" class="leaderboard-list">
+            <!-- Scores injected via JS -->
+        </ul>
     </div>
 </div>
 
@@ -237,15 +318,19 @@ const finalScoreDisplay = document.getElementById('final-score-display');
 
 // Constants
 const CANVAS_WIDTH = 480;
-const CANVAS_HEIGHT = 640;
+const CANVAS_HEIGHT = 800; // Increased height
 const GROUND_HEIGHT = 12;
-const BAR_HEIGHT = 30;
-const BOTTOM_ZONE = GROUND_HEIGHT + BAR_HEIGHT;
+const BAR_HEIGHT = 40;     // Increased bar height
+const TRACKERS = [
+    {name: 'ISS', dist: 400, emoji: '🛰️', color1: '#00ccff', color2: '#002255', msg: 'orbiting the ISS!'},
+    {name: 'Moon', dist: 384400, emoji: '🌕', color1: '#dddddd', color2: '#444444', msg: 'reached the Moon!'},
+    {name: 'Mars', dist: 54600000, emoji: '🔴', color1: '#ff5500', color2: '#551100', msg: 'arrived at Mars!'},
+    {name: 'Jupiter', dist: 588000000, emoji: '🪐', color1: '#ffcc88', color2: '#663311', msg: 'reached Jupiter!'},
+    {name: 'Pluto', dist: 4280000000, emoji: '🌑', color1: '#aaaaff', color2: '#222255', msg: 'made it to Pluto!'}
+];
+const BOTTOM_ZONE = GROUND_HEIGHT + (TRACKERS.length * BAR_HEIGHT);
 const TARGET_FPS = 60;
 const FRAME_MS = 1000 / TARGET_FPS;
-
-// Scale calculation
-const EARTH_MOON_KM = 384400;
 
 // Game Variables
 let state = 'idle'; // idle, playing, gameover
@@ -257,6 +342,28 @@ let gapSize = 160;     // Base gap size
 let obstacleSpawnCounter = 0;
 let obstaclesPassed = 0;
 let timeSinceStart = 0;
+
+let leaderboard = JSON.parse(localStorage.getItem('spaceFlapperLeaderboard')) || [
+    {initials: 'ISU', score: 400000}
+];
+
+// Clean up old mock data from local storage if it was already saved
+leaderboard = leaderboard.filter(entry => 
+    !(entry.initials === 'NEB' && entry.score === 200000) && 
+    !(entry.initials === 'FLA' && entry.score === 50000)
+);
+localStorage.setItem('spaceFlapperLeaderboard', JSON.stringify(leaderboard));
+
+function updateLeaderboardUI() {
+    const list = document.getElementById('leaderboard-list');
+    list.innerHTML = '';
+    leaderboard.forEach(entry => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${entry.initials}</span> <span>${entry.score.toLocaleString()} km</span>`;
+        list.appendChild(li);
+    });
+}
+updateLeaderboardUI();
 
 // Rocket
 const rocket = {
@@ -349,13 +456,49 @@ function startGame() {
 function gameOver() {
     state = 'gameover';
     playSound('gameover');
+    
+    // Check if score is in top 10
+    const isTop10 = leaderboard.length < 10 || score > (leaderboard[leaderboard.length - 1]?.score || 0);
+
     if (score > highScore) {
         highScore = score;
         localStorage.setItem('spaceFlapperBest', highScore);
     }
     finalScoreDisplay.textContent = `Score: ${score.toLocaleString()} km \nBest: ${Number(highScore).toLocaleString()} km`;
+    
+    const initialsContainer = document.getElementById('initials-container');
+    const restartBtn = document.getElementById('restart-btn');
+    
+    if (isTop10 && score > 0) {
+        initialsContainer.classList.remove('hidden');
+        restartBtn.classList.add('hidden');
+        document.getElementById('initials-input').value = '';
+        document.getElementById('initials-input').focus();
+    } else {
+        initialsContainer.classList.add('hidden');
+        restartBtn.classList.remove('hidden');
+    }
+
     gameoverScreen.classList.remove('hidden');
 }
+
+// Save Score Initials Event Listener
+document.getElementById('save-score-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const input = document.getElementById('initials-input');
+    let initials = input.value.trim().toUpperCase();
+    if (!initials) initials = '???';
+    
+    leaderboard.push({initials: initials, score: score});
+    leaderboard.sort((a, b) => b.score - a.score);
+    if (leaderboard.length > 10) leaderboard = leaderboard.slice(0, 10);
+    
+    localStorage.setItem('spaceFlapperLeaderboard', JSON.stringify(leaderboard));
+    updateLeaderboardUI();
+    
+    document.getElementById('initials-container').classList.add('hidden');
+    document.getElementById('restart-btn').classList.remove('hidden');
+});
 
 // Generate Asteroid Pair
 function spawnAsteroid() {
@@ -563,40 +706,41 @@ function draw() {
         ctx.fillRect(i, CANVAS_HEIGHT - BOTTOM_ZONE + Math.random()*GROUND_HEIGHT, (Math.random()*4)+1, (Math.random()*2)+1);
     }
 
-    // 4. Scale Bar (Earth-Moon)
-    const scaleBarY = CANVAS_HEIGHT - BAR_HEIGHT;
-    // Gradient
-    const grad = ctx.createLinearGradient(0, scaleBarY, CANVAS_WIDTH, scaleBarY);
-    grad.addColorStop(0, '#001a4d');
-    grad.addColorStop(1, '#555566');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, scaleBarY, CANVAS_WIDTH, BAR_HEIGHT);
-    
-    // Emojis / Text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('🌍', 5, CANVAS_HEIGHT - 10);
-    ctx.textAlign = 'right';
-    ctx.fillText('🌕', CANVAS_WIDTH - 5, CANVAS_HEIGHT - 10);
-    
-    ctx.textAlign = 'center';
-    ctx.font = '10px Courier New';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('Earth ←───────────────→ Moon (384,400 km)', CANVAS_WIDTH/2, CANVAS_HEIGHT - 19);
+    // 4. Scale Bars (Multiple Trackers)
+    TRACKERS.forEach((tracker, index) => {
+        const scaleBarY = CANVAS_HEIGHT - BOTTOM_ZONE + GROUND_HEIGHT + (index * BAR_HEIGHT);
+        
+        // Gradient
+        const grad = ctx.createLinearGradient(0, scaleBarY, CANVAS_WIDTH, scaleBarY);
+        grad.addColorStop(0, tracker.color2);
+        grad.addColorStop(1, tracker.color1);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, scaleBarY, CANVAS_WIDTH, BAR_HEIGHT - 2); // -2 for slight gap
+        
+        // Emojis / Text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('🌍', 5, scaleBarY + 25);
+        ctx.textAlign = 'right';
+        ctx.fillText(tracker.emoji, CANVAS_WIDTH - 5, scaleBarY + 25);
+        
+        ctx.textAlign = 'center';
+        ctx.font = '12px Courier New';
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillText(`Earth ←────────→ ${tracker.name} (${tracker.dist.toLocaleString()} km)`, CANVAS_WIDTH/2, scaleBarY + 16);
 
-    // Progress Marker
-    const progressLimit = Math.min(score, EARTH_MOON_KM);
-    const progressX = (progressLimit / EARTH_MOON_KM) * CANVAS_WIDTH;
-    const drawX = Math.max(0, Math.min(progressX, CANVAS_WIDTH-2));
-    
-    ctx.fillStyle = '#ffff00';
-    ctx.fillRect(drawX, scaleBarY, 2, BAR_HEIGHT);
-    ctx.beginPath();
-    ctx.moveTo(drawX - 4, scaleBarY + 5);
-    ctx.lineTo(drawX + 6, scaleBarY + 5);
-    ctx.lineTo(drawX + 1, scaleBarY + 12);
-    ctx.fill();
+        // Celebration message if reached overlaying the bar
+        if (score >= tracker.dist) {
+            ctx.fillStyle = '#ffff55';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = 'black';
+            ctx.fillText(`🎉 You ${tracker.msg}`, CANVAS_WIDTH/2, scaleBarY + 34);
+            ctx.shadowBlur = 0;
+        }
+    });
 
     // 5. Rocket & Particles
     particles.forEach(p => {
@@ -617,10 +761,7 @@ function draw() {
     ctx.font = '32px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🚀', 0, 0); // Note: 🚀 naturally points up/right, roughly centered.
-    // Due to emoji font variations, we may need to rotate it exactly 90 deg clockwise if pointing up.
-    // By default iOS/Mac 🚀 points diagonally up-right. To point it RIGHT, we rotate ~45 deg.
-    // Let's draw it simply.
+    ctx.fillText('🚀', 0, 0); 
     ctx.restore();
 
     // 6. HUD (Score)
@@ -636,16 +777,6 @@ function draw() {
         ctx.fillStyle = '#aaaaaa';
         ctx.fillText(`Best: ${Number(highScore).toLocaleString()} km`, CANVAS_WIDTH / 2, 60);
         ctx.shadowBlur = 0; // reset
-    }
-
-    if (score >= EARTH_MOON_KM) {
-        ctx.fillStyle = '#ffff00';
-        ctx.font = 'bold 16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.shadowBlur = 5;
-        ctx.shadowColor = 'black';
-        ctx.fillText('🎉 You reached the Moon!', CANVAS_WIDTH/2, CANVAS_HEIGHT - 6);
-        ctx.shadowBlur = 0;
     }
 }
 
