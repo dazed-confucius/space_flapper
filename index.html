@@ -1,0 +1,672 @@
+<!-- Space Flapper | Flappy Bird Space Clone | GitHub Pages Compatible -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SPACE FLAPPER</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: #000010;
+        background-image: url('./main_image_star-forming_region_carina_nircam_final-5mb_72dpi.jpg');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        font-family: 'Space Grotesk', 'Courier New', Courier, monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        overflow: hidden;
+        user-select: none;
+        position: relative;
+    }
+
+    .isu-logo {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        width: 150px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(100, 100, 255, 0.5);
+        z-index: 10;
+    }
+
+
+
+    .title-box {
+        background-color: rgba(0, 0, 20, 0.75);
+        border: 2px solid rgba(100, 140, 255, 0.6);
+        padding: 15px 40px;
+        border-radius: 12px;
+        backdrop-filter: blur(5px);
+        margin-bottom: 20px;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(100, 140, 255, 0.3);
+    }
+    
+    h1.title {
+        text-shadow: 0 0 15px rgba(100, 140, 255, 1);
+        margin: 0 0 5px 0;
+        font-size: 36px;
+        text-align: center;
+        color: #ffffff;
+        letter-spacing: 2px;
+    }
+    
+    p.subtitle {
+        color: #d0d0ff;
+        margin: 0;
+        font-size: 16px;
+        text-align: center;
+        letter-spacing: 1px;
+        text-shadow: 0 0 5px rgba(0,0,0,1);
+    }
+
+    .game-container {
+        position: relative;
+        width: 480px;
+        max-width: 100vw;
+        height: 640px;
+        max-height: 80vh;
+        box-shadow: 0 0 30px rgba(100, 100, 255, 0.4);
+    }
+
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background-color: #0a0a1a;
+        cursor: pointer;
+    }
+
+    .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .btn {
+        pointer-events: auto;
+        background-color: rgba(10, 10, 40, 0.9);
+        border: 2px solid #6464ff;
+        color: white;
+        padding: 15px 30px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 0 15px rgba(100, 100, 255, 0.5);
+        transition: all 0.2s;
+        text-transform: uppercase;
+        font-family: inherit;
+    }
+
+    .btn:hover {
+        background-color: rgba(40, 40, 100, 0.9);
+        box-shadow: 0 0 25px rgba(100, 100, 255, 0.8);
+        transform: scale(1.05);
+    }
+    
+    .btn:active {
+        transform: scale(0.95);
+    }
+
+    #gameover-screen {
+        background-color: rgba(0, 0, 16, 0.7);
+    }
+
+    .gameover-text {
+        font-size: 40px;
+        color: #ff5555;
+        text-shadow: 0 0 15px rgba(255, 50, 50, 0.8);
+        margin-bottom: 20px;
+        font-weight: bold;
+    }
+
+    .final-score {
+        font-size: 24px;
+        margin-bottom: 30px;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+</style>
+</head>
+<body>
+
+<audio id="bg-music" src="./Project.Space.1.0 - 13.11.2025, 08.33.m4a" loop></audio>
+
+<img src="./Isu-logo.svg.png" alt="International Space University" class="isu-logo">
+
+
+
+<div class="title-box">
+    <h1 class="title">SPACE FLAPPER</h1>
+    <p class="subtitle">Press SPACE or tap to thrust</p>
+</div>
+
+<div class="game-container">
+    <canvas id="gameCanvas" width="480" height="640"></canvas>
+    
+    <div id="start-screen" class="overlay">
+        <button id="start-btn" class="btn">🚀 LAUNCH</button>
+    </div>
+
+    <div id="gameover-screen" class="overlay hidden">
+        <div class="gameover-text">MISSION FAILED</div>
+        <div id="final-score-display" class="final-score">Score: 0 km</div>
+        <button id="restart-btn" class="btn">PLAY AGAIN</button>
+    </div>
+</div>
+
+<script>
+// --- AUDIO SYSTEM ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playSound(type) {
+    if (!audioCtx) return;
+    
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    if (type === 'thrust') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, t);
+        osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+        gain.gain.setValueAtTime(0.02, t);
+        gain.gain.exponentialRampToValueAtTime(0.002, t + 0.1);
+        osc.start(t);
+        osc.stop(t + 0.1);
+    } else if (type === 'score') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, t);
+        osc.frequency.setValueAtTime(800, t + 0.05);
+        gain.gain.setValueAtTime(0.02, t);
+        gain.gain.linearRampToValueAtTime(0, t + 0.1);
+        osc.start(t);
+        osc.stop(t + 0.1);
+    } else if (type === 'gameover') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, t);
+        osc.frequency.exponentialRampToValueAtTime(50, t + 0.5);
+        gain.gain.setValueAtTime(0.04, t);
+        gain.gain.linearRampToValueAtTime(0, t + 0.5);
+        osc.start(t);
+        osc.stop(t + 0.5);
+    }
+}
+
+// --- GAME ENGINE ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const startScreen = document.getElementById('start-screen');
+const startBtn = document.getElementById('start-btn');
+const gameoverScreen = document.getElementById('gameover-screen');
+const restartBtn = document.getElementById('restart-btn');
+const finalScoreDisplay = document.getElementById('final-score-display');
+
+// Constants
+const CANVAS_WIDTH = 480;
+const CANVAS_HEIGHT = 640;
+const GROUND_HEIGHT = 12;
+const BAR_HEIGHT = 30;
+const BOTTOM_ZONE = GROUND_HEIGHT + BAR_HEIGHT;
+const TARGET_FPS = 60;
+const FRAME_MS = 1000 / TARGET_FPS;
+
+// Scale calculation
+const EARTH_MOON_KM = 384400;
+
+// Game Variables
+let state = 'idle'; // idle, playing, gameover
+let lastTime = 0;
+let score = 0;
+let highScore = localStorage.getItem('spaceFlapperBest') || 0;
+let scrollSpeed = 2.5; // Base scroll speed
+let gapSize = 160;     // Base gap size
+let obstacleSpawnCounter = 0;
+let obstaclesPassed = 0;
+let timeSinceStart = 0;
+
+// Rocket
+const rocket = {
+    x: 80,
+    y: CANVAS_HEIGHT / 2,
+    size: 24, // visual radius approximately
+    vy: 0,
+    gravity: 0.4,
+    jumpImpulse: -7,
+    maxFallSpeed: 8,
+    frame: 0
+};
+
+// Asteroids list
+let asteroids = [];
+
+// Stars (Parallax)
+const stars = [];
+for(let i = 0; i < 150; i++) {
+    stars.push({
+        x: Math.random() * CANVAS_WIDTH,
+        y: Math.random() * (CANVAS_HEIGHT - BOTTOM_ZONE),
+        size: Math.random() * 1.5 + 0.5,
+        speed: (Math.random() * 0.4 + 0.1) // 0.1 to 0.5 relative speed
+    });
+}
+
+// Spark particles for thrust
+let particles = [];
+
+// Setup Event Listeners
+function handleInput(e) {
+    if (e.type === 'keydown' && e.code !== 'Space') return;
+    if (e.type === 'keydown') e.preventDefault();
+    
+    initAudio();
+    
+    if (state === 'idle') {
+        startGame();
+    } else if (state === 'playing') {
+        rocket.vy = rocket.jumpImpulse;
+        playSound('thrust');
+        
+        // Spawn exhaust particles
+        for(let i=0; i<5; i++) {
+            particles.push({
+                x: rocket.x - 10,
+                y: rocket.y + (Math.random() * 10 - 5),
+                vx: -Math.random() * 2 - 1,
+                vy: Math.random() * 2 - 1,
+                life: 1.0
+            });
+        }
+    }
+}
+
+window.addEventListener('keydown', handleInput);
+canvas.addEventListener('mousedown', handleInput);
+canvas.addEventListener('touchstart', handleInput, {passive: false});
+
+startBtn.addEventListener('click', (e) => { e.stopPropagation(); initAudio(); startGame(); });
+restartBtn.addEventListener('click', (e) => { e.stopPropagation(); initAudio(); startGame(); });
+
+function resetGame() {
+    rocket.y = CANVAS_HEIGHT / 2;
+    rocket.vy = 0;
+    asteroids = [];
+    particles = [];
+    score = 0;
+    obstaclesPassed = 0;
+    scrollSpeed = 2.5;
+    gapSize = 160;
+    obstacleSpawnCounter = 0;
+    timeSinceStart = 0;
+    startScreen.classList.add('hidden');
+    gameoverScreen.classList.add('hidden');
+}
+
+function startGame() {
+    resetGame();
+    state = 'playing';
+    playSound('thrust');
+    const bgMusic = document.getElementById('bg-music');
+    if (bgMusic.paused) {
+        bgMusic.volume = 0.3;
+        bgMusic.play().catch(e => console.log('Audio playback failed:', e));
+    }
+}
+
+function gameOver() {
+    state = 'gameover';
+    playSound('gameover');
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('spaceFlapperBest', highScore);
+    }
+    finalScoreDisplay.textContent = `Score: ${score.toLocaleString()} km \nBest: ${Number(highScore).toLocaleString()} km`;
+    gameoverScreen.classList.remove('hidden');
+}
+
+// Generate Asteroid Pair
+function spawnAsteroid() {
+    const minHeight = 50;
+    const maxTopHeight = CANVAS_HEIGHT - BOTTOM_ZONE - gapSize - minHeight;
+    const topHeight = Math.floor(Math.random() * (maxTopHeight - minHeight + 1)) + minHeight;
+    
+    const asteroidItem = {
+        x: CANVAS_WIDTH,
+        width: 60,
+        topHeight: topHeight,
+        bottomY: topHeight + gapSize,
+        passed: false,
+        // Visual generation
+        topPoly: generateAsteroidPoly(topHeight, true),
+        botPoly: generateAsteroidPoly(CANVAS_HEIGHT - BOTTOM_ZONE - (topHeight + gapSize), false)
+    };
+    asteroids.push(asteroidItem);
+}
+
+function generateAsteroidPoly(height, isTop) {
+    const points = [];
+    const numPoints = 8 + Math.floor(Math.random() * 4);
+    for(let i = 0; i <= numPoints; i++) {
+        const py = isTop ? (height * (i/numPoints)) : (height * (1 - i/numPoints));
+        const pxOffset = (Math.random() * 20 - 10);
+        points.push({y: py, xOffset: pxOffset});
+    }
+    
+    // Generate craters
+    const craters = [];
+    const numCraters = Math.floor(Math.random() * 3) + 1;
+    for(let i=0; i<numCraters; i++){
+        craters.push({
+            cy: Math.random() * height,
+            cx: Math.random() * 40 - 20, // relative to center
+            r: Math.random() * 6 + 3
+        });
+    }
+    return { edges: points, craters: craters };
+}
+
+// --- UPDATE LOGIC ---
+function update(delta) {
+    const timeScale = delta / FRAME_MS;
+    timeSinceStart += delta;
+    
+    // Update Stars
+    stars.forEach(s => {
+        s.x -= (scrollSpeed * s.speed * timeScale);
+        if (s.x < 0) {
+            s.x = CANVAS_WIDTH;
+            s.y = Math.random() * (CANVAS_HEIGHT - BOTTOM_ZONE);
+        }
+    });
+
+    if (state === 'idle') {
+        // Bobbing animation
+        rocket.y = (CANVAS_HEIGHT / 2) + Math.sin(timeSinceStart * 0.003) * 15;
+    } else if (state === 'playing') {
+        // Rocket Physics
+        rocket.vy += rocket.gravity * timeScale;
+        if (rocket.vy > rocket.maxFallSpeed) rocket.vy = rocket.maxFallSpeed;
+        rocket.y += rocket.vy * timeScale;
+
+        // Ground / Ceiling Collision
+        if (rocket.y - rocket.size < 0 || rocket.y + rocket.size + 5 >= (CANVAS_HEIGHT - BOTTOM_ZONE)) {
+            gameOver();
+            return;
+        }
+
+        // Particle update
+        for(let i = particles.length-1; i >= 0; i--) {
+            particles[i].x += particles[i].vx * timeScale;
+            particles[i].y += particles[i].vy * timeScale;
+            particles[i].life -= 0.05 * timeScale;
+            if (particles[i].life <= 0) particles.splice(i, 1);
+        }
+
+        // Asteroids logic
+        obstacleSpawnCounter += scrollSpeed * timeScale;
+        if (obstacleSpawnCounter >= 200) {
+            spawnAsteroid();
+            obstacleSpawnCounter = 0;
+        }
+
+        for (let i = asteroids.length - 1; i >= 0; i--) {
+            let a = asteroids[i];
+            a.x -= scrollSpeed * timeScale;
+
+            // Collision
+            // Use inset bounding box for rocket (~70%)
+            const rSize = rocket.size * 0.7;
+            const rLeft = rocket.x - rSize;
+            const rRight = rocket.x + rSize;
+            const rTop = rocket.y - rSize;
+            const rBot = rocket.y + rSize;
+
+            const aLeft = a.x;
+            const aRight = a.x + a.width;
+            
+            // Check horizontal overlap
+            if (rRight > aLeft && rLeft < aRight) {
+                // Check vertical overlap with Top
+                if (rTop < a.topHeight) {
+                    gameOver();
+                    return;
+                }
+                // Check vertical overlap with Bottom
+                if (rBot > a.bottomY) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            // Score update
+            if (!a.passed && rocket.x > aRight) {
+                a.passed = true;
+                score += 100;
+                obstaclesPassed++;
+                playSound('score');
+                
+                // Difficulty scaling
+                if (obstaclesPassed % 10 === 0) {
+                    scrollSpeed = Math.min(scrollSpeed + 0.2, 6);
+                    gapSize = Math.max(gapSize - 5, 110);
+                }
+            }
+
+            if (a.x + a.width < 0) {
+                asteroids.splice(i, 1);
+            }
+        }
+    }
+}
+
+// --- DRAW LOGIC ---
+function draw() {
+    // 1. Background
+    ctx.fillStyle = '#0a0a1a';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    // Draw Stars
+    ctx.fillStyle = '#ffffff';
+    stars.forEach(s => {
+        let alpha = Math.min(1, s.size * 0.8);
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1.0;
+
+    // 2. Obstacles
+    asteroids.forEach(a => {
+        ctx.fillStyle = '#5a4a3a';
+        ctx.strokeStyle = '#3a2a1a';
+        ctx.lineWidth = 2;
+        
+        // Draw Top Polygon
+        ctx.beginPath();
+        ctx.moveTo(a.x, 0);
+        a.topPoly.edges.forEach(pt => {
+            ctx.lineTo(a.x + a.width/2 + pt.xOffset, pt.y);
+        });
+        ctx.lineTo(a.x + a.width, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Top craters
+        ctx.fillStyle = '#3a2a1a';
+        a.topPoly.craters.forEach(c => {
+            ctx.beginPath();
+            ctx.arc(a.x + a.width/2 + c.cx, c.cy, c.r, 0, Math.PI*2);
+            ctx.fill();
+        });
+
+        // Draw Bottom Polygon
+        ctx.fillStyle = '#5a4a3a';
+        ctx.beginPath();
+        ctx.moveTo(a.x, CANVAS_HEIGHT - BOTTOM_ZONE);
+        a.botPoly.edges.forEach(pt => {
+            ctx.lineTo(a.x + a.width/2 + pt.xOffset, a.bottomY + pt.y);
+        });
+        ctx.lineTo(a.x + a.width, CANVAS_HEIGHT - BOTTOM_ZONE);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Bottom craters
+        ctx.fillStyle = '#3a2a1a';
+        a.botPoly.craters.forEach(c => {
+            ctx.beginPath();
+            ctx.arc(a.x + a.width/2 + c.cx, a.bottomY + c.cy, c.r, 0, Math.PI*2);
+            ctx.fill();
+        });
+    });
+
+    // 3. Ground
+    ctx.fillStyle = '#222222';
+    ctx.fillRect(0, CANVAS_HEIGHT - BOTTOM_ZONE, CANVAS_WIDTH, GROUND_HEIGHT);
+    ctx.fillStyle = '#111';
+    for(let i=0; i<CANVAS_WIDTH; i+=15) {
+        ctx.fillRect(i, CANVAS_HEIGHT - BOTTOM_ZONE + Math.random()*GROUND_HEIGHT, (Math.random()*4)+1, (Math.random()*2)+1);
+    }
+
+    // 4. Scale Bar (Earth-Moon)
+    const scaleBarY = CANVAS_HEIGHT - BAR_HEIGHT;
+    // Gradient
+    const grad = ctx.createLinearGradient(0, scaleBarY, CANVAS_WIDTH, scaleBarY);
+    grad.addColorStop(0, '#001a4d');
+    grad.addColorStop(1, '#555566');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, scaleBarY, CANVAS_WIDTH, BAR_HEIGHT);
+    
+    // Emojis / Text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('🌍', 5, CANVAS_HEIGHT - 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('🌕', CANVAS_WIDTH - 5, CANVAS_HEIGHT - 10);
+    
+    ctx.textAlign = 'center';
+    ctx.font = '10px Courier New';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('Earth ←───────────────→ Moon (384,400 km)', CANVAS_WIDTH/2, CANVAS_HEIGHT - 19);
+
+    // Progress Marker
+    const progressLimit = Math.min(score, EARTH_MOON_KM);
+    const progressX = (progressLimit / EARTH_MOON_KM) * CANVAS_WIDTH;
+    const drawX = Math.max(0, Math.min(progressX, CANVAS_WIDTH-2));
+    
+    ctx.fillStyle = '#ffff00';
+    ctx.fillRect(drawX, scaleBarY, 2, BAR_HEIGHT);
+    ctx.beginPath();
+    ctx.moveTo(drawX - 4, scaleBarY + 5);
+    ctx.lineTo(drawX + 6, scaleBarY + 5);
+    ctx.lineTo(drawX + 1, scaleBarY + 12);
+    ctx.fill();
+
+    // 5. Rocket & Particles
+    particles.forEach(p => {
+        ctx.fillStyle = `rgba(255, 150, 0, ${p.life})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3 * p.life, 0, Math.PI*2);
+        ctx.fill();
+    });
+
+    ctx.save();
+    ctx.translate(rocket.x, rocket.y);
+    // Rotate slightly based on velocity
+    if (state === 'playing' || state === 'gameover') {
+        const angle = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (rocket.vy * 0.1)));
+        ctx.rotate(angle);
+    }
+    
+    ctx.font = '32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🚀', 0, 0); // Note: 🚀 naturally points up/right, roughly centered.
+    // Due to emoji font variations, we may need to rotate it exactly 90 deg clockwise if pointing up.
+    // By default iOS/Mac 🚀 points diagonally up-right. To point it RIGHT, we rotate ~45 deg.
+    // Let's draw it simply.
+    ctx.restore();
+
+    // 6. HUD (Score)
+    if (state === 'playing' || state === 'idle') {
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 24px Space Grotesk, sans-serif';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(`📏 ${score.toLocaleString()} km`, CANVAS_WIDTH / 2, 40);
+        
+        ctx.font = '14px Space Grotesk, sans-serif';
+        ctx.fillStyle = '#aaaaaa';
+        ctx.fillText(`Best: ${Number(highScore).toLocaleString()} km`, CANVAS_WIDTH / 2, 60);
+        ctx.shadowBlur = 0; // reset
+    }
+
+    if (score >= EARTH_MOON_KM) {
+        ctx.fillStyle = '#ffff00';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = 'black';
+        ctx.fillText('🎉 You reached the Moon!', CANVAS_WIDTH/2, CANVAS_HEIGHT - 6);
+        ctx.shadowBlur = 0;
+    }
+}
+
+// --- MAIN LOOP ---
+function loop(timestamp) {
+    let delta = timestamp - lastTime;
+    if (lastTime === 0) delta = FRAME_MS;
+    // Prevent huge jumps if tab was inactive
+    if (delta > 100) delta = FRAME_MS;
+    
+    lastTime = timestamp;
+
+    update(delta);
+    draw();
+
+    requestAnimationFrame(loop);
+}
+
+// Start
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
