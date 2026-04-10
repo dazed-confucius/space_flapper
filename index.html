@@ -283,11 +283,18 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const scoresRef = db.ref('scores');
-const topScoresQuery = scoresRef.orderByChild('score').limitToLast(10);
 const statusEl = document.getElementById('connection-status');
 
 if (statusEl) statusEl.textContent = "Status: Connecting...";
 console.log("Firebase Initializing...");
+
+// Connection Timeout
+setTimeout(() => {
+    if (statusEl && statusEl.textContent === "Status: Connecting...") {
+        statusEl.textContent = "Status: Timeout (Check URL/Rules)";
+        statusEl.style.color = "#ffaa00";
+    }
+}, 5000);
 
 // --- AUDIO SYSTEM ---
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -395,11 +402,15 @@ function updateLeaderboardUI() {
 }
 
 // Fetch leaderboard from Firebase
-topScoresQuery.on('value', (snapshot) => {
+scoresRef.limitToLast(10).on('value', (snapshot) => {
     console.log("Firebase Data Received", snapshot.val());
-    if (statusEl) statusEl.textContent = "Status: Online";
+    if (statusEl) {
+        statusEl.textContent = "Status: Online";
+        statusEl.style.color = "#00ff00";
+    }
     const data = snapshot.val();
     if (data) {
+        // Sort manually to ensure it works even without server-side indices
         leaderboard = Object.values(data).sort((a, b) => b.score - a.score);
     } else {
         leaderboard = [];
@@ -407,7 +418,10 @@ topScoresQuery.on('value', (snapshot) => {
     updateLeaderboardUI();
 }, (error) => {
     console.error("Firebase Sync Error:", error);
-    if (statusEl) statusEl.textContent = "Status: Sync Error";
+    if (statusEl) {
+        statusEl.textContent = "Status: Sync Error";
+        statusEl.style.color = "#ff5555";
+    }
     const list = document.getElementById('leaderboard-list');
     list.innerHTML = `<li style="justify-content: center; color: #ff5555; font-size: 12px;">Sync Error: check rules</li>`;
 });
