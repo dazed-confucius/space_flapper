@@ -259,6 +259,7 @@
         <ul id="leaderboard-list" class="leaderboard-list">
             <!-- Scores injected via JS -->
         </ul>
+        <div id="connection-status" style="font-size: 10px; color: #aaaaaa; text-align: center; margin-top: 10px; opacity: 0.7;">Status: Initializing...</div>
     </div>
 </div>
 
@@ -280,8 +281,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app, "https://spaceflapper-default-rtdb.firebaseio.com/");
+const statusEl = document.getElementById('connection-status');
 
-console.log("Firebase Initialized with URL: https://spaceflapper-default-rtdb.firebaseio.com/");
+if (statusEl) statusEl.textContent = "Status: Connecting...";
+console.log("Firebase Initializing...");
 
 // --- AUDIO SYSTEM ---
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -393,6 +396,8 @@ const scoresRef = ref(db, 'scores');
 const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
 
 onValue(topScoresQuery, (snapshot) => {
+    console.log("Firebase Data Received", snapshot.val());
+    if (statusEl) statusEl.textContent = "Status: Online";
     const data = snapshot.val();
     if (data) {
         leaderboard = Object.values(data).sort((a, b) => b.score - a.score);
@@ -402,8 +407,9 @@ onValue(topScoresQuery, (snapshot) => {
     updateLeaderboardUI();
 }, (error) => {
     console.error("Firebase Sync Error:", error);
+    if (statusEl) statusEl.textContent = "Status: Sync Error";
     const list = document.getElementById('leaderboard-list');
-    list.innerHTML = `<li style="justify-content: center; color: #ff5555; font-size: 12px;">Sync Error: Check Rules</li>`;
+    list.innerHTML = `<li style="justify-content: center; color: #ff5555; font-size: 12px;">Sync Error: check rules</li>`;
 });
 
 // Rocket
