@@ -462,14 +462,19 @@ function resetGame() {
     gameoverScreen.classList.add('hidden');
 }
 
+let isMusicStarted = false;
+
 function startGame() {
     resetGame();
     state = 'playing';
     playSound('thrust');
+    
     const bgMusic = document.getElementById('bg-music');
-    if (bgMusic.paused) {
+    if (!isMusicStarted && bgMusic.paused) {
         bgMusic.volume = 0.3;
-        bgMusic.play().catch(e => console.log('Audio playback failed:', e));
+        bgMusic.play().then(() => {
+            isMusicStarted = true;
+        }).catch(e => console.log('Audio playback failed:', e));
     }
 }
 
