@@ -349,6 +349,7 @@ let gapSize = 160;     // Base gap size
 let obstacleSpawnCounter = 0;
 let obstaclesPassed = 0;
 let timeSinceStart = 0;
+let gracePeriod = 0;
 
 let leaderboard = [];
 try {
@@ -424,6 +425,7 @@ function handleInput(e) {
     if (state === 'idle') {
         startGame();
     } else if (state === 'playing') {
+        gracePeriod = 0;
         rocket.vy = rocket.jumpImpulse;
         playSound('thrust');
         
@@ -458,6 +460,7 @@ function resetGame() {
     gapSize = 160;
     obstacleSpawnCounter = 0;
     timeSinceStart = 0;
+    gracePeriod = 1000;
     startScreen.classList.add('hidden');
     gameoverScreen.classList.add('hidden');
 }
@@ -588,10 +591,16 @@ function update(delta) {
         // Bobbing animation
         rocket.y = (CANVAS_HEIGHT / 2) + Math.sin(timeSinceStart * 0.003) * 15;
     } else if (state === 'playing') {
-        // Rocket Physics
-        rocket.vy += rocket.gravity * timeScale;
-        if (rocket.vy > rocket.maxFallSpeed) rocket.vy = rocket.maxFallSpeed;
-        rocket.y += rocket.vy * timeScale;
+        if (gracePeriod > 0) {
+            gracePeriod -= delta;
+            rocket.y = (CANVAS_HEIGHT / 2) + Math.sin(timeSinceStart * 0.003) * 15;
+            rocket.vy = 0;
+        } else {
+            // Rocket Physics
+            rocket.vy += rocket.gravity * timeScale;
+            if (rocket.vy > rocket.maxFallSpeed) rocket.vy = rocket.maxFallSpeed;
+            rocket.y += rocket.vy * timeScale;
+        }
 
         // Ground / Ceiling Collision
         if (rocket.y - rocket.size < 0 || rocket.y + rocket.size + 5 >= (CANVAS_HEIGHT - BOTTOM_ZONE)) {
