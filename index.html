@@ -604,8 +604,8 @@ function spawnAsteroid() {
 
 function generateAsteroidCluster(height, width) {
     const rocks = [];
-    // Create enough rocks to form a dense-looking barrier
-    const numRocks = Math.max(6, Math.floor(height / 12)); 
+    // Increase density by 50% (dividing by 8 instead of 12)
+    const numRocks = Math.max(9, Math.floor(height / 8)); 
     
     for(let i = 0; i < numRocks; i++) {
         rocks.push({
