@@ -833,17 +833,26 @@ function draw() {
         // --- REINTRODUCED: Yellow Triangle Cursor ---
         const progress = Math.min(score / tracker.dist, 1.0);
         const cursorX = progress * CANVAS_WIDTH;
+        
+        // 1. Draw a vertical needle line
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cursorX, scaleBarY);
+        ctx.lineTo(cursorX, scaleBarY + BAR_HEIGHT - 2);
+        ctx.stroke();
+
+        // 2. Draw the triangle at the TOP pointing DOWN
         ctx.fillStyle = '#ffff00';
         ctx.beginPath();
-        // Pointing up from the bottom of the bar
-        const triBaseY = scaleBarY + BAR_HEIGHT - 2;
-        ctx.moveTo(cursorX, triBaseY);
-        ctx.lineTo(cursorX - 6, triBaseY + 8);
-        ctx.lineTo(cursorX + 6, triBaseY + 8);
+        ctx.moveTo(cursorX, scaleBarY);
+        ctx.lineTo(cursorX - 7, scaleBarY - 10);
+        ctx.lineTo(cursorX + 7, scaleBarY - 10);
         ctx.closePath();
         ctx.fill();
-        // Small dark outline for readability
-        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        
+        // Small dark outline for the triangle
+        ctx.strokeStyle = '#000';
         ctx.lineWidth = 1;
         ctx.stroke();
     });
