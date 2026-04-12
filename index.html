@@ -23,6 +23,7 @@
         overflow: hidden;
         user-select: none;
         position: relative;
+        touch-action: none; /* Mobile scroll prevention */
     }
 
     .isu-logo {
@@ -79,9 +80,11 @@
     canvas {
         display: block;
         width: 100%;
-        height: 100%;
+        height: auto;
+        max-height: 90vh;
         background-color: #0a0a1a;
         cursor: pointer;
+        touch-action: none; /* Mobile interaction optimization */
     }
 
     .overlay {
@@ -115,6 +118,9 @@
         transition: all 0.2s;
         text-transform: uppercase;
         font-family: inherit;
+        touch-action: manipulation; /* iOS double-tap fix */
+        min-width: 160px;
+        min-height: 48px; /* Standard mobile tap target */
     }
 
     .btn:hover {
@@ -221,9 +227,40 @@
         box-shadow: 0 0 10px #6464ff;
     }
 
+    /* Orientation Lock Overlay */
+    #orientation-warning {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: #000010;
+        z-index: 1000;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 20px;
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+        #orientation-warning {
+            display: flex;
+        }
+        .main-wrapper, .title-box, .isu-logo {
+            display: none !important;
+        }
+    }
 </style>
 </head>
 <body>
+
+<div id="orientation-warning">
+    <div style="font-size: 50px; margin-bottom: 20px;">📱</div>
+    <h2 style="color: #6464ff;">PORTRAIT MODE REQUIRED</h2>
+    <p>Please rotate your device to portrait mode to play Space Flapper.</p>
+</div>
 
 <audio id="bg-music" src="./Project.Space.1.0 - 13.11.2025, 08.33.m4a" loop></audio>
 
@@ -473,7 +510,10 @@ let particles = [];
 // Setup Event Listeners
 function handleInput(e) {
     if (e.type === 'keydown' && e.code !== 'Space') return;
-    if (e.type === 'keydown') e.preventDefault();
+    // Prevent default scrolling/zooming on mobile and spacebar scrolling on desktop
+    if (e.type === 'keydown' || e.type === 'touchstart') {
+        if (e.cancelable) e.preventDefault();
+    }
     
     initAudio();
     
