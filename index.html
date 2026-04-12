@@ -829,6 +829,23 @@ function draw() {
             ctx.fillText(`🎉 You ${tracker.msg}`, CANVAS_WIDTH/2, scaleBarY + 34);
             ctx.shadowBlur = 0;
         }
+
+        // --- REINTRODUCED: Yellow Triangle Cursor ---
+        const progress = Math.min(score / tracker.dist, 1.0);
+        const cursorX = progress * CANVAS_WIDTH;
+        ctx.fillStyle = '#ffff00';
+        ctx.beginPath();
+        // Pointing up from the bottom of the bar
+        const triBaseY = scaleBarY + BAR_HEIGHT - 2;
+        ctx.moveTo(cursorX, triBaseY);
+        ctx.lineTo(cursorX - 6, triBaseY + 8);
+        ctx.lineTo(cursorX + 6, triBaseY + 8);
+        ctx.closePath();
+        ctx.fill();
+        // Small dark outline for readability
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
     });
 
     // 5. Rocket & Particles
