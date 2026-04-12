@@ -595,33 +595,51 @@ function spawnAsteroid() {
         topHeight: topHeight,
         bottomY: topHeight + gapSize,
         passed: false,
-        // Visual generation
-        topPoly: generateAsteroidPoly(topHeight, true),
-        botPoly: generateAsteroidPoly(CANVAS_HEIGHT - BOTTOM_ZONE - (topHeight + gapSize), false)
+        // Visual generation: Clusters of rocks
+        topCluster: generateAsteroidCluster(topHeight, 60),
+        botCluster: generateAsteroidCluster(CANVAS_HEIGHT - BOTTOM_ZONE - (topHeight + gapSize), 60)
     };
     asteroids.push(asteroidItem);
 }
 
-function generateAsteroidPoly(height, isTop) {
-    const points = [];
-    const numPoints = 8 + Math.floor(Math.random() * 4);
-    for(let i = 0; i <= numPoints; i++) {
-        const py = isTop ? (height * (i/numPoints)) : (height * (1 - i/numPoints));
-        const pxOffset = (Math.random() * 20 - 10);
-        points.push({y: py, xOffset: pxOffset});
-    }
+function generateAsteroidCluster(height, width) {
+    const rocks = [];
+    // Create enough rocks to form a dense-looking barrier
+    const numRocks = Math.max(6, Math.floor(height / 12)); 
     
-    // Generate craters
-    const craters = [];
-    const numCraters = Math.floor(Math.random() * 3) + 1;
-    for(let i=0; i<numCraters; i++){
-        craters.push({
-            cy: Math.random() * height,
-            cx: Math.random() * 40 - 20, // relative to center
-            r: Math.random() * 6 + 3
+    for(let i = 0; i < numRocks; i++) {
+        rocks.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: Math.random() * 10 + 6,
+            // Pre-calculate organic shape jitter
+            jitter: Array.from({length: 8}, () => Math.random() * 0.4 + 0.8),
+            // Randomly pick a color variation
+            color: Math.random() > 0.5 ? '#5a4a3a' : '#4a3a2a'
         });
     }
-    return { edges: points, craters: craters };
+    return rocks;
+}
+
+function drawRock(ctx, x, y, r, jitter) {
+    ctx.beginPath();
+    for(let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const dist = r * jitter[i];
+        const px = x + Math.cos(angle) * dist;
+        const py = y + Math.sin(angle) * dist;
+        if(i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // Tiny crater on the rock
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.arc(x + r*0.3, y - r*0.2, r*0.2, 0, Math.PI*2);
+    ctx.fill();
 }
 
 // --- UPDATE LOGIC ---
@@ -741,49 +759,21 @@ function draw() {
     });
     ctx.globalAlpha = 1.0;
 
-    // 2. Obstacles
+    // 2. Obstacles (Asteroid Clusters)
     asteroids.forEach(a => {
-        ctx.fillStyle = '#5a4a3a';
         ctx.strokeStyle = '#3a2a1a';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         
-        // Draw Top Polygon
-        ctx.beginPath();
-        ctx.moveTo(a.x, 0);
-        a.topPoly.edges.forEach(pt => {
-            ctx.lineTo(a.x + a.width/2 + pt.xOffset, pt.y);
-        });
-        ctx.lineTo(a.x + a.width, 0);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        
-        // Top craters
-        ctx.fillStyle = '#3a2a1a';
-        a.topPoly.craters.forEach(c => {
-            ctx.beginPath();
-            ctx.arc(a.x + a.width/2 + c.cx, c.cy, c.r, 0, Math.PI*2);
-            ctx.fill();
+        // Draw Top Cluster
+        a.topCluster.forEach(rock => {
+            ctx.fillStyle = rock.color;
+            drawRock(ctx, a.x + rock.x, rock.y, rock.r, rock.jitter);
         });
 
-        // Draw Bottom Polygon
-        ctx.fillStyle = '#5a4a3a';
-        ctx.beginPath();
-        ctx.moveTo(a.x, CANVAS_HEIGHT - BOTTOM_ZONE);
-        a.botPoly.edges.forEach(pt => {
-            ctx.lineTo(a.x + a.width/2 + pt.xOffset, a.bottomY + pt.y);
-        });
-        ctx.lineTo(a.x + a.width, CANVAS_HEIGHT - BOTTOM_ZONE);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        
-        // Bottom craters
-        ctx.fillStyle = '#3a2a1a';
-        a.botPoly.craters.forEach(c => {
-            ctx.beginPath();
-            ctx.arc(a.x + a.width/2 + c.cx, a.bottomY + c.cy, c.r, 0, Math.PI*2);
-            ctx.fill();
+        // Draw Bottom Cluster
+        a.botCluster.forEach(rock => {
+            ctx.fillStyle = rock.color;
+            drawRock(ctx, a.x + rock.x, a.bottomY + rock.y, rock.r, rock.jitter);
         });
     });
 
