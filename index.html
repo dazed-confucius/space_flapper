@@ -687,7 +687,7 @@ function update(delta) {
 
         // Asteroids logic
         obstacleSpawnCounter += scrollSpeed * timeScale;
-        if (obstacleSpawnCounter >= 200) {
+        if (obstacleSpawnCounter >= 260) {
             spawnAsteroid();
             obstacleSpawnCounter = 0;
         }
@@ -730,8 +730,8 @@ function update(delta) {
                 
                 // Difficulty scaling
                 if (obstaclesPassed % 10 === 0) {
-                    scrollSpeed = Math.min(scrollSpeed + 0.2, 6);
-                    gapSize = Math.max(gapSize - 5, 110);
+                    scrollSpeed = Math.min(scrollSpeed + 0.1, 5.0);
+                    gapSize = Math.max(gapSize - 5, 135);
                 }
             }
 
